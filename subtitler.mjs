@@ -56,7 +56,7 @@ Object.entries(videoFiles).forEach(([extension, files]) => {
     const outFile = path.resolve(outDir, file);
     switch (extension) {
       case "mp4":
-        muxVideo(inputVideo, outFile, file, subtitles);
+        handleMp4(inputVideo, outFile, subtitles);
         break;
       case "mkv":
         //TODO: add MKV support
