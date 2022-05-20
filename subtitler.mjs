@@ -1,23 +1,48 @@
 #!/usr/bin/env zx
-import { handleMkv, handleMp4 } from "./util/formatHandlers.mjs";
-$.verbose = false;
-const folder = argv._[1];
+import path from 'path';
+import { $, argv, chalk, fs } from 'zx';
+import { echo } from 'zx/experimental';
 
-if (!folder) {
-  console.log(chalk.blue("Usage: subtitler <folder>"));
-  process.exit(1);
+import processVideo from './util/processVideo.mjs';
+
+$.verbose = false;
+
+if (argv['h'] || argv['help']) {
+  echo(`
+    ${chalk.bold(chalk.bgMagentaBright(' Subtitler '))}
+    ${chalk.bold('  Usage:')}
+        zx subtitler.mjs [options] <inputDir>
+    ${chalk.bold('  Options:')}
+        <inputDir>    The directory containing the video files to process
+        -h | --help   Show help message
+  `);
+  process.exit(0);
 }
 
-const outDir = path.resolve(folder, "out");
+const inputDir = argv._[1] || argv._[0];
+if (!inputDir) {
+  echo(chalk.blue('Usage: subtitler <folder>'));
+  process.exit(1);
+}
+if (!fs.existsSync(inputDir)) {
+  console.error(chalk.red(`Folder '${inputDir}' does not exist.`));
+  process.exit(2);
+}
+
+const outDir = path.resolve(inputDir, 'out');
 
 if (!fs.existsSync(outDir)) {
   fs.mkdirSync(outDir);
 }
 
-const subPaths = fs.readdirSync(folder, { withFileTypes: true });
-const files = subPaths
+const rawInputFiles = fs
+  .readdirSync(inputDir, { withFileTypes: true })
   .filter((dirent) => dirent.isFile())
   .map((dirent) => dirent.name);
+
+if (rawInputFiles.length === 0) {
+  console.error(chalk.red('No files found in folder.'));
+}
 
 const videoFiles = {
   mp4: [],
@@ -26,17 +51,17 @@ const videoFiles = {
 
 const subtitleFiles = [];
 
-files.forEach((file) => {
+rawInputFiles.forEach((file) => {
   const fileExtension = path.extname(file).slice(1);
 
   if (videoFiles[fileExtension]) {
     videoFiles[fileExtension].push({
       file,
     });
-  } else if (fileExtension === "srt") {
+  } else if (fileExtension === 'srt') {
     subtitleFiles.push(file);
   } else {
-    console.warn("Unknown file extension:", file);
+    console.warn('Unknown file extension:', file);
   }
 });
 
@@ -53,35 +78,14 @@ Object.entries(videoFiles).forEach(([extension, files]) => {
 });
 
 Object.entries(videoFiles).forEach(([extension, files]) => {
-  for (const { file, subtitles } of files) {
-    if (subtitles.length === 0) {
+  files.forEach(({ file, subtitles }) => {
+    if (!subtitles || subtitles.length === 0) {
       console.warn(
         chalk.yellow(`No subtitles found for '${file}'. Skipping...`)
       );
-      continue;
+      return;
     }
 
-    processVideo(file, extension, subtitles);
-  }
+    processVideo({ file, extension, subtitles, inputDir, outDir });
+  });
 });
-
-function processVideo(file, extension, subtitles) {
-  const inputVideo = path.resolve(folder, file);
-  const outFile = path.resolve(outDir, file);
-
-  console.log(chalk.blue(`Processing '${file}'...`));
-  switch (extension) {
-    case "mp4":
-      handleMp4(inputVideo, folder, outFile, subtitles).then(() => {
-        console.log(chalk.green(`${file} processed.`));
-      });
-      break;
-    case "mkv":
-      handleMkv(inputVideo, folder, outFile, subtitles).then(() => {
-        console.log(chalk.green(`${file} processed.`));
-      });
-      break;
-    default:
-      throw new Error(`Unknown extension: ${extension} for file: ${file}`);
-  }
-}
