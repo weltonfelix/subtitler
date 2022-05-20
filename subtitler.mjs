@@ -1,4 +1,6 @@
 #!/usr/bin/env zx
+import { handleMkv, handleMp4 } from "./util/formatHandlers.mjs";
+$.verbose = false;
 const folder = argv._[1];
 
 if (!folder) {
@@ -52,39 +54,34 @@ Object.entries(videoFiles).forEach(([extension, files]) => {
 
 Object.entries(videoFiles).forEach(([extension, files]) => {
   for (const { file, subtitles } of files) {
-    const inputVideo = path.resolve(folder, file);
-    const outFile = path.resolve(outDir, file);
-    switch (extension) {
-      case "mp4":
-        handleMp4(inputVideo, outFile, subtitles);
-        break;
-      case "mkv":
-        //TODO: add MKV support
-        break;
+    if (subtitles.length === 0) {
+      console.warn(
+        chalk.yellow(`No subtitles found for '${file}'. Skipping...`)
+      );
+      continue;
     }
+
+    processVideo(file, extension, subtitles);
   }
 });
 
-async function handleMp4(inputVideo, outFile, subtitles) {
-  const subtitlesList = subtitles
-    .map((subtitle) => [`-i`, `${path.resolve(folder, subtitle)}`])
-    .flat();
+function processVideo(file, extension, subtitles) {
+  const inputVideo = path.resolve(folder, file);
+  const outFile = path.resolve(outDir, file);
 
-  const maps = (function () {
-    const args = [];
-    for (let i = 1; i <= subtitles.length; i++) {
-      args.push(`-map`, `${i}`);
-    }
-    return args;
-  })();
-
-  await $`
-    ffmpeg -y \
-    -i ${inputVideo} \
-    ${subtitlesList} \
-    -map 0:v -map 0:a ${maps} \
-    -c:v copy -c:a copy \
-    -c:s mov_text \
-    ${outFile}
-  `;
+  console.log(chalk.blue(`Processing '${file}'...`));
+  switch (extension) {
+    case "mp4":
+      handleMp4(inputVideo, folder, outFile, subtitles).then(() => {
+        console.log(chalk.green(`${file} processed.`));
+      });
+      break;
+    case "mkv":
+      handleMkv(inputVideo, folder, outFile, subtitles).then(() => {
+        console.log(chalk.green(`${file} processed.`));
+      });
+      break;
+    default:
+      throw new Error(`Unknown extension: ${extension} for file: ${file}`);
+  }
 }
