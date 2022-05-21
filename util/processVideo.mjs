@@ -9,6 +9,7 @@ export default function processVideo({
   subtitles,
   inputDir,
   outDir,
+  logger,
 }) {
   const inputVideo = path.resolve(inputDir, file);
   const outFile = path.resolve(outDir, file);
@@ -17,13 +18,13 @@ export default function processVideo({
   const stopSpinner = startSpinner(`Processing videos...`);
   switch (extension) {
     case 'mp4':
-      handleMp4(inputVideo, inputDir, outFile, subtitles).then(() => {
+      handleMp4(inputVideo, inputDir, outFile, subtitles, logger).then(() => {
         echo(chalk.green(`${file} processed.`));
         stopSpinner();
       });
       break;
     case 'mkv':
-      handleMkv(inputVideo, inputDir, outFile, subtitles).then(() => {
+      handleMkv(inputVideo, inputDir, outFile, subtitles, logger).then(() => {
         echo(chalk.green(`${file} processed.`));
         stopSpinner();
       });

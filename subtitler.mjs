@@ -2,10 +2,15 @@
 import path from 'path';
 import { $, argv, chalk, fs } from 'zx';
 import { echo } from 'zx/experimental';
+import Logger from './util/log.mjs';
 
 import processVideo from './util/processVideo.mjs';
 
-$.verbose = false;
+if (argv['v'] || argv['verbose']) {
+  $.verbose = true;
+} else {
+  $.verbose = false;
+}
 
 if (argv['h'] || argv['help']) {
   echo(`
@@ -13,8 +18,9 @@ if (argv['h'] || argv['help']) {
     ${chalk.bold('  Usage:')}
         zx subtitler.mjs [options] <inputDir>
     ${chalk.bold('  Options:')}
-        <inputDir>    The directory containing the video files to process
-        -h | --help   Show help message
+        <inputDir>      The directory containing the video files to process
+        -h | --help     Show help message
+        -v | --verbose  Show verbose output
   `);
   process.exit(0);
 }
@@ -28,6 +34,8 @@ if (!fs.existsSync(inputDir)) {
   console.error(chalk.red(`Folder '${inputDir}' does not exist.`));
   process.exit(2);
 }
+
+const logger = new Logger('subtitler-log.txt');
 
 const outDir = path.resolve(inputDir, 'out');
 
@@ -86,6 +94,6 @@ Object.entries(videoFiles).forEach(([extension, files]) => {
       return;
     }
 
-    processVideo({ file, extension, subtitles, inputDir, outDir });
+    processVideo({ file, extension, subtitles, inputDir, outDir, logger });
   });
 });

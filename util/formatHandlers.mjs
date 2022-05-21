@@ -1,5 +1,8 @@
 import { $, path } from 'zx';
 
+// eslint-disable-next-line no-unused-vars
+import Logger from './log.mjs';
+
 /**
  * @typedef {Object} ParsedSubtitle
  * @property {string[]} subtitleFilesList List of input flags for ffmpeg
@@ -34,21 +37,21 @@ function parseSubtitlesData(subtitleFiles, inputDir) {
  * @param {string} inputDir Folder where the files are located
  * @param {string} outFile Output file location
  * @param {string[]} subtitleFiles List of subtitle files
+ * @param {Logger} logger
  */
 export async function handleMp4(
   inputVideoFile,
   inputDir,
   outFile,
-  subtitleFiles
+  subtitleFiles,
+  logger
 ) {
   const { subtitleFilesList, mapFlags } = parseSubtitlesData(
     subtitleFiles,
     inputDir
   );
-  await $`
+  const output = await $`
     ffmpeg -y \
-    -hide_banner \
-    -loglevel error \
     -i ${inputVideoFile} \
     ${subtitleFilesList} \
     -map 0:v -map 0:a ${mapFlags} \
@@ -56,6 +59,8 @@ export async function handleMp4(
     -c:s mov_text \
     ${outFile}
   `;
+
+  logger?.log(output);
 }
 
 /**
@@ -64,21 +69,21 @@ export async function handleMp4(
  * @param {string} inputDir Folder where the files are located
  * @param {string} outFile Output file location
  * @param {string[]} subtitleFiles List of subtitle files
+ * @param {Logger} logger
  */
 export async function handleMkv(
   inputVideoFile,
   inputDir,
   outFile,
-  subtitleFiles
+  subtitleFiles,
+  logger
 ) {
   const { subtitleFilesList, mapFlags } = parseSubtitlesData(
     subtitleFiles,
     inputDir
   );
-  await $`
+  const output = await $`
     ffmpeg -y \
-    -hide_banner \
-    -loglevel error \
     -i ${inputVideoFile} \
     -sub_charenc 'UTF-8' \
     -f srt \
@@ -88,4 +93,6 @@ export async function handleMkv(
     -c:s srt \
     ${outFile}
   `;
+
+  logger?.log(output);
 }
