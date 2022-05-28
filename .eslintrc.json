@@ -14,7 +14,11 @@
   },
   "rules": {
     "prettier/prettier": "error",
-    "import/extensions": ["error", { "mjs": "ignorePackages" }],
+    "import/extensions": [
+      "error",
+      { "mjs": "ignorePackages" },
+      { "json": "never" }
+    ],
     "no-plusplus": "off",
     "no-console": "off",
     "dot-notation": "off"

@@ -6,6 +6,8 @@ import Logger from './util/log.mjs';
 
 import processVideo from './util/processVideo.mjs';
 
+import { subtitleLanguages } from './config.mjs';
+
 if (argv['v'] || argv['verbose']) {
   $.verbose = true;
 } else {
@@ -67,7 +69,16 @@ rawInputFiles.forEach((file) => {
       file,
     });
   } else if (fileExtension === 'srt') {
-    subtitleFiles.push(file);
+    const fileNameLang = file.split('.').slice(-2, -1)[0];
+    const subtitleLang =
+      fileNameLang in subtitleLanguages
+        ? subtitleLanguages[fileNameLang]
+        : null;
+
+    subtitleFiles.push({
+      file,
+      language: subtitleLang,
+    });
   } else {
     console.warn('Unknown file extension:', file);
   }
@@ -77,7 +88,7 @@ Object.entries(videoFiles).forEach(([extension, files]) => {
   for (let i = 0; i < files.length; i++) {
     const videoFileName = files[i].file;
 
-    const subtitles = subtitleFiles.filter((file) =>
+    const subtitles = subtitleFiles.filter(({ file }) =>
       file.includes(path.basename(videoFileName, `.${extension}`))
     );
 
